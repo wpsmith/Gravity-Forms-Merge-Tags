@@ -35,6 +35,7 @@
 abstract class WPS_GF_Merge_Tags {
 
 	protected $_args = null;
+	protected $_merge_tags = array();
 
 	public static $instance = null;
 
@@ -47,7 +48,8 @@ abstract class WPS_GF_Merge_Tags {
 		$this->_args = wp_parse_args( $args, $this->get_defaults() );
 
 		// Auto-replace tags
-		add_action( 'gform_replace_merge_tags', array( $this, 'replace_merge_tags' ), 10, 3 );
+		add_action( 'gform_replace_merge_tags', array( $this, 'replace_merge_tags' ), 10, 7 );
+		add_action( 'gform_custom_merge_tags', array( $this, 'add_custom_merge_tags' ), 10, 4 );
 
 		// Add constructor to be extended
 		if ( method_exists( $this, 'init' ) ) {
@@ -59,9 +61,56 @@ abstract class WPS_GF_Merge_Tags {
 
 	abstract protected function get_defaults();
 
-	abstract public function replace_merge_tags( $text, $form, $entry );
+	/**
+	 * Replace custom merge tags in notifications.
+	 *
+	 * @param string $text
+	 * @param array $form
+	 * @param array $entry
+	 * @param bool $url_encode
+	 * @param bool $esc_html
+	 * @param bool $nl2br
+	 * @param string $format
+	 * @return string
+	 */
+	abstract public function replace_merge_tags( $text, $form, $entry, $url_encode, $esc_html, $nl2br, $format );
 
+	/**
+	 * Add a custom merge tags.
+	 *
+	 * @param array $merge_tags
+	 * @param int $form_id
+	 * @param array $fields
+	 * @param int $element_id
+	 * @return array
+	 */
+	public function add( $label, $tag ) {
+		if ( !isset( $this->_merge_tags ) && preg_match("/^{([a-zA-Z0-9]*)}$/", $tag, $matches) ) {
+			$this->_merge_tags[] = array(
+				'label' => $label,
+				'tag'   => $tag,
+			);
+		}
+	}
 
+	/**
+	 * Add custom merge tags.
+	 *
+	 * @param array $merge_tags
+	 * @param int $form_id
+	 * @param array $fields
+	 * @param int $element_id
+	 * @return array
+	 */
+	public function add_custom_merge_tags( $merge_tags, $form_id, $fields, $element_id ) {
+		if ( !empty( $this->_merge_tags ) ) {
+			foreach( $this->_merge_tags as $mt ) {
+				$merge_tags[] = $mt;
+			}
+		}
+
+		return $merge_tags;
+	}
 }
 
 
